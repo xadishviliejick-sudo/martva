@@ -28,6 +28,8 @@ p{margin:0 0 10px;color:var(--mut)}
 .btn.sec{background:transparent;border:2px solid var(--line);color:var(--tx)}
 .btn.gold{background:var(--acc);color:#1a1a1a}
 .btn[aria-disabled=true]{opacity:.45;pointer-events:none}
+.cnt{margin-top:14px;text-align:center;color:var(--mut);font-size:15px}
+.cnt b{color:var(--acc);font-size:22px;font-weight:900;margin-right:4px}
 .steps{display:grid;gap:10px;margin-top:6px}
 .step{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 .step b.n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--acc);color:#1a1a1a;display:flex;align-items:center;justify-content:center}
@@ -61,6 +63,7 @@ p{margin:0 0 10px;color:var(--mut)}
     <h1 data-t="h1"></h1>
     <p class="lead" data-t="lead"></p>
     <a class="btn big" href="#/cities" data-t="play"></a>
+    <div class="cnt hide" id="cnt"><b id="cntN">0</b><span data-t="cntL"></span></div>
 
     <h2 data-t="howT"></h2>
     <div class="steps">
@@ -91,7 +94,7 @@ p{margin:0 0 10px;color:var(--mut)}
   <section id="routes" class="hide">
     <button class="back" data-go="#/cities" data-t="back"></button>
     <h1 id="rCity"></h1>
-    <p data-t="routesP"></p>
+    <p id="routesP"></p>
     <div id="routeList"></div>
   </section>
 
@@ -104,33 +107,55 @@ p{margin:0 0 10px;color:var(--mut)}
 // Пока пусто — кнопка «Задонатить» будет неактивной.
 var DONATE_URL = "https://egreve.bog.ge/martva";
 // Адрес игры (маршрут №1)
-var GAME_URL = "game/";
+var GAME_URL = "game.html";
+// Счётчик запусков экзамена (Abacus, без регистрации). Замени namespace на свой уникальный, если хочешь.
+var CNT_NS = "martva-ge-simulator", CNT_KEY = "starts", CNT_BASE = "https://abacus.jasoncameron.dev/";
 
 var T={
-ka:{brand:"მართვის გამოცდა",h1:"მოემზადე მართვის მოწმობის გამოცდისთვის",lead:"უფასო სიმულატორი ბრაუზერში. რეალური საგამოცდო მარშრუტი, ხმოვანი მითითებები და გამოცდის კითხვები. დარეგისტრაცია საჭირო არ არის.",play:"თამაში",howT:"როგორ მუშაობს",
+ka:{brand:"მართვის გამოცდა",h1:"მოემზადე მართვის მოწმობის გამოცდისთვის",lead:"უფასო სიმულატორი ბრაუზერში. რეალური საგამოცდო მარშრუტი, ხმოვანი მითითებები და გამოცდის კითხვები. დარეგისტრაცია საჭირო არ არის.",play:"თამაში",cntL:"ადამიანმა უკვე დაიწყო გამოცდა",howT:"როგორ მუშაობს",
 s1:"აირჩიე ქალაქი და მარშრუტი.",s2:"იმართე მანქანა ტელეფონზე ან კომპიუტერზე: საჭე, გაზი, მუხრუჭი, მიმთითებლები.",s3:"მოუსმინე მითითებებს, გაჩერდი სადაც საჭიროა და უპასუხე გამოცდის კითხვებს.",
 jarT:"დაგვეხმარე პროექტის განვითარებაში",jarP:"თამაში უფასოა. თუ გინდა, დაგვეხმარე ახალი მარშრუტებისა და ქალაქების შექმნაში.",donate:"დონატი",
 back:"← უკან",citiesT:"აირჩიე ქალაქი",citiesP:"ახალი ქალაქები მალე დაემატება.",routesP:"მარშრუტი 1 ღიაა, დანარჩენი მალე გაიხსნება.",
-routeN:"მარშრუტი",hw:"თბილისი–რუსთავის გზატკეცილი",soon:"მალე",open:"ღიაა",nr:"8 მარშრუტი",foot:"სასწავლო სიმულატორი. არ ცვლის რეალურ გამოცდისთვის მომზადებას."},
-ru:{brand:"Экзамен на права",h1:"Подготовься к экзамену на водительские права",lead:"Бесплатный симулятор в браузере. Настоящий экзаменационный маршрут, голосовые подсказки и вопросы экзамена. Регистрация не нужна.",play:"Играть",howT:"Как это работает",
+routeN:"მარშრუტი",hw:"თბილისი–რუსთავის გზატკეცილი",soon:"მალე",open:"ღიაა",nr:"8 მარშრუტი",routesPB:"სამივე მარშრუტი ღიაა.",b1:"ჭავჭავაძის, პუშკინის და აბაშიძის ქუჩები",b2:"ბულვარი და გენერალ აბაშიძის გამზირი",b3:"ქალაქის გრძელი რგოლი",foot:"სასწავლო სიმულატორი. არ ცვლის რეალურ გამოცდისთვის მომზადებას."},
+ru:{brand:"Экзамен на права",h1:"Подготовься к экзамену на водительские права",lead:"Бесплатный симулятор в браузере. Настоящий экзаменационный маршрут, голосовые подсказки и вопросы экзамена. Регистрация не нужна.",play:"Играть",cntL:"раз уже начинали экзамен",howT:"Как это работает",
 s1:"Выбери город и маршрут.",s2:"Управляй машиной на телефоне или компьютере: руль, газ, тормоз, поворотники.",s3:"Слушай подсказки, останавливайся где нужно и отвечай на вопросы экзамена.",
 jarT:"Поддержи проект",jarP:"Игра бесплатная. Если хочешь, помоги создать новые маршруты и города.",donate:"Задонатить",
 back:"← Назад",citiesT:"Выбери город",citiesP:"Новые города скоро появятся.",routesP:"Маршрут 1 открыт, остальные откроются позже.",
-routeN:"Маршрут",hw:"Трасса Тбилиси–Рустави",soon:"Скоро",open:"Открыт",nr:"8 маршрутов",foot:"Учебный симулятор. Не заменяет подготовку к настоящему экзамену."},
-en:{brand:"Driving Exam",h1:"Prepare for the Georgian driving test",lead:"A free browser simulator. A real exam route, voice instructions and exam questions. No sign-up needed.",play:"Play",howT:"How it works",
+routeN:"Маршрут",hw:"Трасса Тбилиси–Рустави",soon:"Скоро",open:"Открыт",nr:"8 маршрутов",routesPB:"Все три маршрута открыты.",b1:"Чавчавадзе, Пушкина, Абашидзе",b2:"Бульвар и проспект Абашидзе",b3:"Длинный городской круг",foot:"Учебный симулятор. Не заменяет подготовку к настоящему экзамену."},
+en:{brand:"Driving Exam",h1:"Prepare for the Georgian driving test",lead:"A free browser simulator. A real exam route, voice instructions and exam questions. No sign-up needed.",play:"Play",cntL:"exams started so far",howT:"How it works",
 s1:"Pick a city and a route.",s2:"Drive on your phone or computer: wheel, gas, brake, turn signals.",s3:"Follow the voice prompts, stop where needed and answer the exam questions.",
 jarT:"Support the project",jarP:"The game is free. If you like, help fund new routes and cities.",donate:"Donate",
 back:"← Back",citiesT:"Choose a city",citiesP:"More cities are coming soon.",routesP:"Route 1 is open, the rest unlock later.",
-routeN:"Route",hw:"Tbilisi–Rustavi highway",soon:"Soon",open:"Open",nr:"8 routes",foot:"Training simulator. Not a substitute for real exam preparation."}
+routeN:"Route",hw:"Tbilisi–Rustavi highway",soon:"Soon",open:"Open",nr:"8 routes",routesPB:"All three routes are open.",b1:"Chavchavadze, Pushkin and Abashidze streets",b2:"The boulevard and Abashidze avenue",b3:"A long city loop",foot:"Training simulator. Not a substitute for real exam preparation."}
 };
 var CITIES=[
- {id:"rustavi",ka:"რუსთავი",ru:"Рустави",en:"Rustavi",on:1},
- {ka:"თბილისი",ru:"Тбилиси",en:"Tbilisi"},{ka:"ბათუმი",ru:"Батуми",en:"Batumi"},{ka:"ქუთაისი",ru:"Кутаиси",en:"Kutaisi"},
+ {id:"rustavi",ka:"რუსთავი",ru:"Рустави",en:"Rustavi",on:1,n:8},
+ {ka:"თბილისი",ru:"Тбилиси",en:"Tbilisi"},{id:"batumi",ka:"ბათუმი",ru:"Батуми",en:"Batumi",on:1,n:3},{ka:"ქუთაისი",ru:"Кутаиси",en:"Kutaisi"},
  {ka:"თელავი",ru:"Телави",en:"Telavi"},{ka:"გორი",ru:"Гори",en:"Gori"},{ka:"ზუგდიდი",ru:"Зугдиди",en:"Zugdidi"},
  {ka:"ახალციხე",ru:"Ахалцихе",en:"Akhaltsikhe"},{ka:"ფოთი",ru:"Поти",en:"Poti"},{ka:"ოზურგეთი",ru:"Озургети",en:"Ozurgeti"},{ka:"მარნეული",ru:"Марнеули",en:"Marneuli"}
 ];
 var lang="ka";try{lang=localStorage.getItem("lang")||(/^ru/i.test(navigator.language)?"ru":/^ka/i.test(navigator.language)?"ka":"en")}catch(e){}
 function $(s){return document.querySelector(s)}
+
+// ====== СЧЁТЧИК ======
+function showCount(v){
+  if(typeof v!=="number"||!isFinite(v))return;
+  $("#cntN").textContent=v.toLocaleString(lang=="ru"?"ru-RU":lang=="ka"?"ka-GE":"en-US");
+  $("#cnt").classList.remove("hide");
+}
+function loadCount(){
+  try{fetch(CNT_BASE+"get/"+CNT_NS+"/"+CNT_KEY).then(function(r){return r.ok?r.json():(r.status==404?{value:0}:null)}).then(function(j){if(j)showCount(j.value)}).catch(function(){})}catch(e){}
+}
+// вызывается при нажатии на маршрут; не чаще раза в 30 секунд с одного устройства
+function hitStart(){
+  try{
+    var now=Date.now(),last=+localStorage.getItem("lastHit")||0;
+    if(now-last<30000)return;
+    localStorage.setItem("lastHit",String(now));
+  }catch(e){}
+  try{fetch(CNT_BASE+"hit/"+CNT_NS+"/"+CNT_KEY,{keepalive:true}).catch(function(){})}catch(e){}
+}
+
 function render(){
   var t=T[lang];document.documentElement.lang=lang;
   $("#brand").textContent=t.brand;
@@ -138,18 +163,26 @@ function render(){
   $("#lang").innerHTML=["ka","ru","en"].map(function(l){return '<button data-l="'+l+'" class="'+(l==lang?"on":"")+'">'+l.toUpperCase()+'</button>'}).join("");
   var d=$("#donate");if(DONATE_URL){d.href=DONATE_URL;d.removeAttribute("aria-disabled")}else{d.removeAttribute("href");d.setAttribute("aria-disabled","true")}
   $("#cityGrid").innerHTML=CITIES.map(function(c){
-    return c.on?'<button class="card open" data-go="#/routes/'+c.id+'"><span class="nm">'+c[lang]+'</span><span class="sub">'+t.nr+'</span></button>'
+    return c.on?'<button class="card open" data-go="#/routes/'+c.id+'"><span class="nm">'+c[lang]+'</span><span class="sub">'+t.nr.replace('8',c.n)+'</span></button>'
     :'<div class="card lock"><span class="lk">🔒</span><span class="nm">'+c[lang]+'</span><span class="sub">'+t.soon+'</span></div>'}).join("");
-  var rc=CITIES[0][lang];$("#rCity").textContent=rc;
-  var h="";for(var i=1;i<=8;i++){
-    h+=i==1?'<a class="card open route" href="'+GAME_URL+'"><span class="num">1</span><span><span class="nm">'+t.routeN+' 1</span><br><span class="sub">'+t.hw+'</span></span><span class="go">▶</span></a>'
-    :'<div class="card lock route"><span class="num">'+i+'</span><span><span class="nm">'+t.routeN+' '+i+'</span><br><span class="sub">'+t.soon+'</span></span><span class="go">🔒</span></div>'}
+  renderRoutes();
+}
+
+function curCity(){var m=(location.hash||"").match(/#\/routes\/(\w+)/),id=m?m[1]:"rustavi";return CITIES.filter(function(c){return c.id==id})[0]||CITIES[0]}
+function renderRoutes(){
+  var t=T[lang],c=curCity(),h="",bat=c.id=="batumi";
+  $("#rCity").textContent=c[lang];$("#routesP").textContent=bat?t.routesPB:t.routesP;
+  for(var i=1;i<=c.n;i++){
+    var open=bat||i==1,url=bat?GAME_URL+"?r=bat"+i+"#r=bat"+i:GAME_URL+"?r=rustavi#r=rustavi",sub=bat?t["b"+i]:t.hw;
+    h+=open?'<a class="card open route" onclick="hitStart();try{localStorage.setItem(\'route\',\''+(bat?'bat'+i:'rustavi')+'\')}catch(e){}" href="'+url+'"><span class="num">'+i+'</span><span><span class="nm">'+t.routeN+' '+i+'</span><br><span class="sub">'+sub+'</span></span><span class="go">\u25b6</span></a>'
+    :'<div class="card lock route"><span class="num">'+i+'</span><span><span class="nm">'+t.routeN+' '+i+'</span><br><span class="sub">'+t.soon+'</span></span><span class="go">\ud83d\udd12</span></div>'}
   $("#routeList").innerHTML=h;
 }
 function show(){
   var h=location.hash||"#/";var id="home";
   if(h.indexOf("#/cities")==0)id="cities";else if(h.indexOf("#/routes")==0)id="routes";
   ["home","cities","routes"].forEach(function(s){$("#"+s).classList.toggle("hide",s!=id)});
+  if(id=="routes")renderRoutes();
   window.scrollTo(0,0);
 }
 document.addEventListener("click",function(e){
@@ -157,5 +190,5 @@ document.addEventListener("click",function(e){
   var g=e.target.closest("[data-go]");if(g){location.hash=g.dataset.go}
 });
 window.addEventListener("hashchange",show);
-render();show();
+render();show();loadCount();
 </script></body></html>
