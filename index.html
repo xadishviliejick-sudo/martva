@@ -193,4 +193,24 @@ document.addEventListener("click",function(e){
 });
 window.addEventListener("hashchange",show);
 render();show();loadCount();
-</script></body></html>
+</script>
+<!-- Adsterra: Social Bar + Popunder (только в лобби, в игре во время вождения рекламы нет) -->
+<script>
+(function(){
+  function addScript(u){var s=document.createElement("script");s.async=true;s.setAttribute("data-cfasync","false");s.src=u;document.body.appendChild(s)}
+  // Social Bar: один раз при открытии лобби
+  addScript("https://bauval.org/14/c2214d531585fa6255cccc8f7ef95339");
+  // Popunder: подключается, когда открыт список маршрутов, чтобы сработать при нажатии на маршрут.
+  // Не чаще раза в 5 минут с одного устройства.
+  var popDone=false,POP_GAP=5*60*1000;
+  function loadPop(){
+    if(popDone)return;
+    try{var last=+localStorage.getItem("popAt")||0;if(Date.now()-last<POP_GAP)return;localStorage.setItem("popAt",String(Date.now()))}catch(e){}
+    popDone=true;
+    addScript("https://abscloud.org/1/0249190d6771b863e9202afc8380f68e");
+  }
+  function check(){if((location.hash||"").indexOf("#/routes")==0)loadPop()}
+  window.addEventListener("hashchange",check);check();
+})();
+</script>
+</body></html>
